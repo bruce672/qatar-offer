@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qatar Deal Finder — Doha Offers Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: #252535;
+    --accent: #e8c547;
+    --accent2: #5b7fff;
+    --text: #f0f0f8;
+    --muted: #7070a0;
+    --danger: #ff5c5c;
+    --green: #4ade80;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  header {
+    position: relative;
+    z-index: 10;
+    padding: 3rem 2rem 2rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(232,197,71,0.06) 0%, transparent 100%);
+  }
+
+  .logo-tag {
+    display: inline-block;
+    background: var(--accent);
+    color: #000;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.75rem;
+    border-radius: 2px;
+    margin-bottom: 1rem;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-weight: 300;
+    margin-bottom: 2rem;
+  }
+
+  /* Search bar */
+  .search-wrapper {
+    max-width: 600px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .search-wrapper input {
+    width: 100%;
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    padding: 0.9rem 3.5rem 0.9rem 1.2rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .search-wrapper input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(232,197,71,0.12);
+  }
+
+  .search-wrapper input::placeholder { color: var(--muted); }
+
+  .search-btn {
+    position: absolute;
+    right: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #000;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 0.5rem 1rem;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .search-btn:hover { opacity: 0.85; }
+  .search-btn:active { transform: translateY(-50%) scale(0.97); }
+
+  /* Filter chips */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    padding: 1.5rem 2rem 0;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .chip {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.3rem 0.9rem;
+    transition: all 0.15s;
+  }
+
+  .chip:hover, .chip.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  /* Main content */
+  main {
+    position: relative;
+    z-index: 5;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .status-dot.loading { background: var(--accent); animation: pulse 1s infinite; }
+  .status-dot.done { background: var(--green); }
+  .status-dot.error { background: var(--danger); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+  }
+
+  /* Offer Card */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    animation: fadeUp 0.4s ease both;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(232,197,71,0.3);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-thumb {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    background: var(--surface);
+    display: block;
+  }
+
+  .card-thumb-placeholder {
+    width: 100%;
+    height: 160px;
+    background: linear-gradient(135deg, var(--surface), var(--border));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+  }
+
+  .card-body {
+    padding: 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .card-store {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .store-logo {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    object-fit: contain;
+    background: white;
+    padding: 2px;
+    flex-shrink: 0;
+  }
+
+  .store-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--text);
+  }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: auto;
+  }
+
+  .badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 99px;
+    letter-spacing: 0.03em;
+  }
+
+  .badge-days {
+    background: rgba(232,197,71,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(232,197,71,0.25);
+  }
+
+  .badge-ends-today {
+    background: rgba(255,92,92,0.12);
+    color: var(--danger);
+    border: 1px solid rgba(255,92,92,0.25);
+  }
+
+  .badge-ending-soon {
+    background: rgba(255,160,50,0.12);
+    color: #ffb347;
+    border: 1px solid rgba(255,160,50,0.25);
+  }
+
+  .badge-pages {
+    background: rgba(91,127,255,0.12);
+    color: var(--accent2);
+    border: 1px solid rgba(91,127,255,0.25);
+  }
+
+  .card-link {
+    display: block;
+    margin-top: 0.75rem;
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.5rem;
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .card-link:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  /* Empty / placeholder states */
+  .state-box {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+  }
+
+  .state-box .icon { font-size: 3rem; margin-bottom: 1rem; }
+  .state-box h2 { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 700; color: var(--text); margin-bottom: 0.5rem; }
+  .state-box p { font-size: 0.9rem; line-height: 1.6; max-width: 400px; margin: 0 auto; }
+
+  /* AI response box */
+  .ai-box {
+    background: linear-gradient(135deg, rgba(91,127,255,0.08), rgba(232,197,71,0.04));
+    border: 1px solid rgba(91,127,255,0.25);
+    border-radius: 14px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text);
+    display: none;
+  }
+
+  .ai-box.visible { display: block; }
+
+  .ai-box-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  footer {
+    position: relative;
+    z-index: 5;
+    text-align: center;
+    padding: 2rem;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  footer a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 600px) {
+    header { padding: 2rem 1rem 1.5rem; }
+    main { padding: 1.5rem 1rem; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-tag">🇶🇦 Qatar · Doha</div>
+  <h1>Deal <span>Finder</span></h1>
+  <p class="subtitle">Search across all D4D Online Qatar offers — phones, TVs, groceries & more</p>
+
+  <div class="search-wrapper">
+    <input
+      type="text"
+      id="searchInput"
+      placeholder='Try "iPhone", "Samsung", "TV", "Rice"...'
+      autocomplete="off"
+    />
+    <button class="search-btn" onclick="doSearch()">Search</button>
+  </div>
+
+  <div class="chips" id="chips">
+    <span class="chip active" data-q="">All Offers</span>
+    <span class="chip" data-q="iPhone">iPhone</span>
+    <span class="chip" data-q="Samsung">Samsung</span>
+    <span class="chip" data-q="TV">TV</span>
+    <span class="chip" data-q="laptop">Laptop</span>
+    <span class="chip" data-q="tablet">Tablet</span>
+    <span class="chip" data-q="smartwatch">Smartwatch</span>
+    <span class="chip" data-q="PlayStation">PlayStation</span>
+    <span class="chip" data-q="rice">Rice</span>
+    <span class="chip" data-q="milk">Milk</span>
+    <span class="chip" data-q="chicken">Chicken</span>
+  </div>
+</header>
+
+<main>
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Ready — search for any product or click a category above</span>
+  </div>
+
+  <div class="ai-box" id="aiBox">
+    <div class="ai-box-label">✦ AI Summary</div>
+    <div id="aiText"></div>
+  </div>
+
+  <div class="grid" id="grid">
+    <div class="state-box">
+      <div class="icon">🔍</div>
+      <h2>Find Your Best Deal</h2>
+      <p>Type a product name above and hit Search, or tap one of the quick filter chips to browse current Qatar offers.</p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Data sourced from <a href="https://d4donline.com/en/qatar/doha/offers" target="_blank">D4D Online Qatar</a> via AI extraction · Built for Doha shoppers
+</footer>
+
+<script>
+// ─── Raw offer data extracted from d4donline.com ───────────────────────────
+const ALL_OFFERS = [
+  { title: "Where The World Comes To Shop", store: "LuLu Hypermarket", logo: "https://cdn.d4donline.com/u/c/c20884fa867ff8f5f8450a177c7a2cf3.png", thumb: "https://cdn.d4donline.com/u/o/cp/ace8cb72244126eedd9bfad3e955e72b.webp", days: "+7 Days left", pages: "+39 Pages", url: "https://d4donline.com/en/qatar/doha/offers/lulu-hypermarket-49/701314/doha-qatar-lulu-hypermarket-offers-where-the-world-comes-to-shop", tags: ["grocery","electronics","general"] },
+  { title: "Special Offer", store: "Carrefour", logo: "https://cdn.d4donline.com/u/c/fa40c867cd71c4373aacb4c6bbec3a7e.jpg", thumb: "https://cdn.d4donline.com/u/o/cp/2752909f4ba317be29d2fa35dafed9e0.webp", days: "+3 Days left", pages: "+21 Pages", url: "https://d4donline.com/en/qatar/doha/offers/carrefour-36/704449/doha-qatar-carrefour-offers-special-offer", tags: ["grocery","electronics","general"] },
+  { title: "Digital Deal", store: "Paris Hypermarket", logo: "https://cdn.d4donline.com/u/c/5982fcbc25aacdc7387ea05dd095ec80.png", thumb: "https://cdn.d4donline.com/u/o/cp/f1b2f1fcdfa7296e5be67ff904033954.webp", days: "+2 Days left", pages: "+11 Pages", url: "https://d4donline.com/en/qatar/doha/offers/paris-hypermarket-950/701815/doha-qatar-paris-hypermarket-offers-digital-deal", tags: ["electronics","phone","mobile","laptop","digital"] },
+  { title: "Special Offer", store: "Al Meera", logo: "https://cdn.d4donline.com/u/c/94cb00ef2d2eedc7c6ec5e856df3ee75.png", thumb: "https://cdn.d4donline.com/u/o/cp/95fc264d198f62d0c85a2a4bcf07f445.webp", days: "+4 Days left", pages: "+7 Pages", url: "https://d4donline.com/en/qatar/doha/offers/al-meera-173/702202/doha-qatar-al-meera-offers-special-offer", tags: ["grocery","food","dairy","rice"] },
+  { title: "Weekly Price", store: "Safari Hypermarket", logo: "https://cdn.d4donline.com/u/c/ed76a310098c8858f96a44a36ae7c9f3.png", thumb: "https://cdn.d4donline.com/u/o/cp/12469836bc4d3cad5845f1a5de0d3d78.webp", days: "Ends today", pages: "+18 Pages", url: "https://d4donline.com/en/qatar/doha/offers/safari-hypermarket-33/705421/doha-qatar-safari-hypermarket-offers-weekly-price", tags: ["grocery","food","meat","rice","chicken"] },
+  { title: "New Arrivals Smart Wearables!", store: "Techno Blue", logo: "https://cdn.d4donline.com/u/c/6b18ccd54ae3572da1ab3bfa44c3d4d4.png", thumb: "https://cdn.d4donline.com/u/o/cp/49fbe8ae203657285c23bdc4e1051d2e.webp", days: "+12 Days left", pages: "", url: "https://d4donline.com/en/qatar/doha/offers/techno-blue-48/705358/doha-qatar-techno-blue-offers-new-arrivals-smart-wearables-", tags: ["smartwatch","wearable","watch","electronics","tech"] },
+  { title: "Grand Offers", store: "Grand Hypermarket", logo: "https://cdn.d4donline.com/u/c/ac432fef6552051a696c8f9c3ffe0374.png", thumb: "https://cdn.d4donline.com/u/o/cp/cc6551bbff949b5894eed27224a7c7e7.webp", days: "Ends tomorrow", pages: "", url: "https://d4donline.com/en/qatar/doha/offers/grand-hypermarket-45/703642/doha-qatar-grand-hypermarket-offers-grand-offers", tags: ["general","grocery","electronics"] },
+  { title: "Summer Blast", store: "City Hypermarket", logo: "https://cdn.d4donline.com/u/c/9b0c88f49943184c1ad13a4c0a908f69.png", thumb: "https://cdn.d4donline.com/u/o/cp/b97f79fdd83a8860d81c97d5092dbf7e.webp", days: "+3 Days left", pages: "+11 Pages", url: "https://d4donline.com/en/qatar/doha/offers/city-hypermarket-3298/704410/doha-qatar-city-hypermarket-offers-summer-blast", tags: ["grocery","general","food"] },
+  { title: "Summer Savings", store: "Ansar Gallery", logo: "https://cdn.d4donline.com/u/c/03cd4c06.jpg", thumb: "https://cdn.d4donline.com/u/o/cp/2b3d7e0f9dde51b1e5c18b815dad3e81.webp", days: "+10 Days left", pages: "+30 Pages", url: "https://d4donline.com/en/qatar/doha/offers/ansar-gallery-55/704704/doha-qatar-ansar-gallery-offers-summer-savings", tags: ["electronics","home","clothing","general"] },
+  { title: "Prestige Business-Tech Pay Later Mega Offers", store: "Prestige Computers", logo: "https://cdn.d4donline.com/u/c/cb2a762cd6311ff612af8daa0e1e029b.png", thumb: "https://cdn.d4donline.com/u/o/cp/adbbb3da71237ed06549282d4b57bdb2.webp", days: "+5 Days left", pages: "+10 Pages", url: "https://d4donline.com/en/qatar/doha/offers/prestige-computers-3136/705832/doha-qatar-prestige-computers-offers-prestige-business-tech-pay-later-mega-offers", tags: ["laptop","computer","electronics","tech","gaming"] },
+  { title: "Winter Fest", store: "iCONNECT", logo: "https://cdn.d4donline.com/u/c/19ef575a8b5efab66c22e04e0b7fa411.png", thumb: "https://cdn.d4donline.com/u/o/cp/625d4b68b5a0f416a21f5719ee5caae5.webp", days: "+4 Days left", pages: "+47 Pages", url: "https://d4donline.com/en/qatar/doha/offers/iconnect-3122/704887/doha-qatar-iconnect-offers-winter-fest", tags: ["phone","mobile","electronics","iphone","samsung","accessories"] },
+  { title: "Mobile Mania Week", store: "ELECTROMATE QA TRADING", logo: "https://cdn.d4donline.com/u/c/6cc385803fd09f93820d8c2f23e2da59.png", thumb: "https://cdn.d4donline.com/u/o/cp/a3a1f22f8b97446383cc35aa0cbf2fed.webp", days: "Ends tomorrow", pages: "+4 Pages", url: "https://d4donline.com/en/qatar/doha/offers/electromate-qa-trading-3804/703660/doha-qatar-electromate-qa-trading-offers-mobile-mania-week", tags: ["phone","mobile","iphone","samsung","electronics"] },
+  { title: "Lenovo Deals", store: "Digital Zone Trading", logo: "https://cdn.d4donline.com/u/c/feefbf78f90020b513524c8334174d94.png", thumb: "https://cdn.d4donline.com/u/o/cp/f6b986602dc196308c501de301662ba4.webp", days: "+17 Days left", pages: "+2 Pages", url: "https://d4donline.com/en/qatar/doha/offers/digital-zone-trading-3434/705106/doha-qatar-digital-zone-trading-offers-lenovo-deals", tags: ["laptop","lenovo","computer","electronics","tech"] },
+  { title: "Happy Weekend", store: "Emax", logo: "https://cdn.d4donline.com/u/c/3385ba3442141171d8bcfc609a584ce1.png", thumb: "https://cdn.d4donline.com/u/o/cp/3b915af454ad95706e001ef1f7b828db.webp", days: "+3 Days left", pages: "+8 Pages", url: "https://d4donline.com/en/qatar/doha/offers/emax-753/704629/doha-qatar-emax-offers-happy-weekend", tags: ["electronics","phone","tv","laptop","tablet","general"] },
+  { title: "Big Sale", store: "CELL PLANET PHONES", logo: "https://cdn.d4donline.com/u/c/48b8b86ed08fe20afb153ca9126d1724.png", thumb: "https://cdn.d4donline.com/u/o/cp/70ed9592e91dc1dc3730cdc34659145c.webp", days: "+4 Days left", pages: "+42 Pages", url: "https://d4donline.com/en/qatar/doha/offers/cell-planet-phones-3926/705391/doha-qatar-cell-planet-phones-offers-big-sale", tags: ["phone","mobile","iphone","samsung","accessories"] },
+  { title: "Special Offer", store: "Cairo Phones", logo: "https://cdn.d4donline.com/u/c/9f5a1cef96e1b11d58801f295f77edfa.png", thumb: "https://cdn.d4donline.com/u/o/cp/b8af822871c3bd71c5b7bb6133dbffa4.webp", days: "+2 Days left", pages: "+6 Pages", url: "https://d4donline.com/en/qatar/doha/offers/cairo-phones-3191/702985/doha-qatar-cairo-phones-offers-special-offer", tags: ["phone","mobile","iphone","samsung","accessories"] },
+  { title: "Summer Tech Drop", store: "Tech Deals Trading", logo: "https://cdn.d4donline.com/u/c/7c139d40b732141ecd345ca0061b7581.png", thumb: "https://cdn.d4donline.com/u/o/cp/017669c31bad27964adeb312bf75e4d4.webp", days: "+6 Days left", pages: "+22 Pages", url: "https://d4donline.com/en/qatar/doha/offers/tech-deals-trading-3301/704374/doha-qatar-tech-deals-trading-offers-summer-tech-drop", tags: ["phone","mobile","laptop","electronics","tech","iphone","samsung"] },
+  { title: "Tech Treats", store: "Super Touch", logo: "https://cdn.d4donline.com/u/c/b73159b70b8b0b083db7c503a776bb4c.png", thumb: "https://cdn.d4donline.com/u/o/cp/d6848328266662a3f10bbe0e4432c2d2.webp", days: "+7 Days left", pages: "+2 Pages", url: "https://d4donline.com/en/qatar/doha/offers/super-touch-3610/703303/doha-qatar-super-touch-offers-tech-treats", tags: ["phone","mobile","electronics","tech","accessories"] },
+  { title: "iPhone 17 Pro Max", store: "Grand Hypermarket", logo: "https://cdn.d4donline.com/u/c/ac432fef6552051a696c8f9c3ffe0374.png", thumb: "https://cdn.d4donline.com/u/o/cp/06ac4d6ca44283a71f347acfee20bc43.webp", days: "Ends today", pages: "", url: "https://d4donline.com/en/qatar/doha/offers/grand-hypermarket-45/706003/doha-qatar-grand-hypermarket-offers-iphone-17-pro-max", tags: ["iphone","phone","apple","mobile","electronics"] },
+  { title: "Samsung Neo QLED 100!", store: "Techno Blue", logo: "https://cdn.d4donline.com/u/c/6b18ccd54ae3572da1ab3bfa44c3d4d4.png", thumb: "https://cdn.d4donline.com/u/o/cp/2398377336341f9fe269352721ee63d1.webp", days: "+3 Days left", pages: "", url: "https://d4donline.com/en/qatar/doha/offers/techno-blue-48/705493/doha-qatar-techno-blue-offers-samsung-neo-qled-100-", tags: ["samsung","tv","electronics","tech"] },
+  { title: "Shop Our Latest Samsung Mobile Devices!", store: "Techno Blue", logo: "https://cdn.d4donline.com/u/c/6b18ccd54ae3572da1ab3bfa44c3d4d4.png", thumb: "https://cdn.d4donline.com/u/o/cp/44ce964e842f03e23672def0c7659182.webp", days: "+2 Days left", pages: "", url: "https://d4donline.com/en/qatar/doha/offers/techno-blue-48/704515/doha-qatar-techno-blue-offers-shop-our-latest-samsung-mobile-devices-", tags: ["samsung","phone","mobile","electronics"] },
+  { title: "Samsung A37 & A57 - Latest Arrivals", store: "Digital Zone Trading", logo: "https://cdn.d4donline.com/u/c/feefbf78f90020b513524c8334174d94.png", thumb: "https://cdn.d4donline.com/u/o/cp/7dfd1de36f4a2be51851ae67ad5044f5.webp", days: "+3 Days left", pages: "", url: "https://d4donline.com/en/qatar/doha/offers/digital-zone-trading-3434/705268/doha-qatar-digital-zone-trading-offers-samsung-a37-a57-latest-arrivals", tags: ["samsung","phone","mobile","electronics"] },
+  { title: "Prestige Gaming Pay Later Mega Offers", store: "Prestige Computers", logo: "https://cdn.d4donline.com/u/c/cb2a762cd6311ff612af8daa0e1e029b.png", thumb: "https://cdn.d4donline.com/u/o/cp/7f3d96993acd4482fc6d762de6fe955b.webp", days: "+5 Days left", pages: "+5 Pages", url: "https://d4donline.com/en/qatar/doha/offers/prestige-computers-3136/705277/doha-qatar-prestige-computers-offers-prestige-gaming-pay-later-mega-offers", tags: ["gaming","playstation","laptop","electronics","tech"] },
+  { title: "Digital Hub", store: "Al Rawabi Electronics", logo: "https://cdn.d4donline.com/u/c/c8a1f0eb6590cdea0f0fb5a0286e7bc9.png", thumb: "https://cdn.d4donline.com/u/o/cp/31330fd14d47573703557f29d0417d48.webp", days: "+3 Days left", pages: "+4 Pages", url: "https://d4donline.com/en/qatar/doha/offers/al-rawabi-electronics-1251/701017/doha-qatar-al-rawabi-electronics-offers-digital-hub", tags: ["electronics","phone","tv","laptop","tablet","tech"] },
+  { title: "Sandisk Storage Deals", store: "Digital Zone Trading", logo: "https://cdn.d4donline.com/u/c/feefbf78f90020b513524c8334174d94.png", thumb: "https://cdn.d4donline.com/u/o/cp/fa42ecc3705cdc793d5d5fb96776dd78.webp", days: "+7 Days left", pages: "", url: "https://d4donline.com/en/qatar/doha/offers/digital-zone-trading-3434/705361/doha-qatar-digital-zone-trading-offers-sandisk-storage-deals", tags: ["accessories","storage","electronics","tech"] },
+  { title: "Monoprix Weekend Specials!", store: "Monoprix", logo: "https://cdn.d4donline.com/u/c/06ef2809354238db8c6d9e5e7fc2fcee.png", thumb: "https://cdn.d4donline.com/u/o/cp/c50a8471f89a5faad547c93122399cc6.webp", days: "+3 Days left", pages: "+27 Pages", url: "https://d4donline.com/en/qatar/doha/offers/monoprix-1096/705340/doha-qatar-monoprix-offers-monoprix-weekend-specials-", tags: ["grocery","general","clothing","food"] },
+  { title: "Snoomart Magazine", store: "Snoomart", logo: "https://cdn.d4donline.com/u/c/cb93a7bd673bda112bb58862b7b51abe.png", thumb: "https://cdn.d4donline.com/u/o/cp/7b8b1dabc22363907c46adaa2a14ef33.webp", days: "+21 Days left", pages: "+43 Pages", url: "https://d4donline.com/en/qatar/doha/offers/snoomart-3134/705283/doha-qatar-snoomart-offers-snoomart-magazine", tags: ["grocery","food","general"] },
+  { title: "New Arrivals Titan Watches!", store: "Techno Blue", logo: "https://cdn.d4donline.com/u/c/6b18ccd54ae3572da1ab3bfa44c3d4d4.png", thumb: "https://cdn.d4donline.com/u/o/cp/49602c5748893384a81c58116c90c548.webp", days: "+12 Days left", pages: "", url: "https://d4donline.com/en/qatar/doha/offers/techno-blue-48/705367/doha-qatar-techno-blue-offers-new-arrivals-titan-watches-", tags: ["watch","smartwatch","wearable","accessories"] },
+  { title: "Half Pay Back", store: "LuLu Hypermarket", logo: "https://cdn.d4donline.com/u/c/c20884fa867ff8f5f8450a177c7a2cf3.png", thumb: "https://cdn.d4donline.com/u/o/cp/bf66fdeaf9dbf9861c902221672a34d4.webp", days: "+4 Days left", pages: "+4 Pages", url: "https://d4donline.com/en/qatar/doha/offers/lulu-hypermarket-49/705100/doha-qatar-lulu-hypermarket-offers-half-pay-back", tags: ["general","grocery","electronics"] },
+  { title: "Summer Savings Ansar Home", store: "Ansar Gallery", logo: "https://cdn.d4donline.com/u/c/03cd4c06.jpg", thumb: "https://cdn.d4donline.com/u/o/cp/f0ac4de09f1c407a702469a1afe8d930.webp", days: "+10 Days left", pages: "+15 Pages", url: "https://d4donline.com/en/qatar/doha/offers/ansar-gallery-55/704485/doha-qatar-ansar-gallery-offers-summer-savings-ansar-home", tags: ["home","furniture","appliances","general"] },
+  { title: "PC house", store: "PC house", logo: "https://cdn.d4donline.com/u/c/3709da15003fe0c9fe83979bdb8182d2.png", thumb: "https://cdn.d4donline.com/u/o/cp/7479e4568c4c0e07bd06d4ee307946c1.webp", days: "Ends tomorrow", pages: "+33 Pages", url: "https://d4donline.com/en/qatar/doha/offers/pc-house-3819/703648/doha-qatar-pc-house-offers-pc-house", tags: ["laptop","computer","electronics","tech"] },
+  { title: "April Special Offer", store: "Royce World Trading", logo: "https://cdn.d4donline.com/u/c/b83773dd9def6cfa99eefc90197a21f1.png", thumb: "https://cdn.d4donline.com/u/o/cp/28afdf91070667de562dab0db1381445.webp", days: "+12 Days left", pages: "+7 Pages", url: "https://d4donline.com/en/qatar/doha/offers/royce-world-trading-services-w-l-l-3859/700819/doha-qatar-royce-world-trading-services-w-l-l-offers-april-special-offer", tags: ["general","electronics","accessories"] },
+  { title: "Game In Comfort", store: "Digital Zone Trading", logo: "https://cdn.d4donline.com/u/c/feefbf78f90020b513524c8334174d94.png", thumb: "https://cdn.d4donline.com/u/o/cp/e09f1ec44845c65b05873da8c6cb2e23.webp", days: "+7 Days left", pages: "", url: "https://d4donline.com/en/qatar/doha/offers/digital-zone-trading-3434/705109/doha-qatar-digital-zone-trading-offers-game-in-comfort", tags: ["gaming","playstation","electronics","tech"] },
+];
+
+// ─── Search & filter logic ─────────────────────────────────────────────────
+let currentQuery = '';
+
+function setStatus(state, text) {
+  const dot = document.getElementById('statusDot');
+  const st = document.getElementById('statusText');
+  dot.className = 'status-dot ' + state;
+  st.textContent = text;
+}
+
+function getDaysBadgeClass(days) {
+  if (!days) return 'badge-days';
+  if (days.toLowerCase().includes('today')) return 'badge-ends-today';
+  if (days.toLowerCase().includes('tomorrow')) return 'badge-ending-soon';
+  const match = days.match(/\+(\d+)/);
+  if (match && parseInt(match[1]) <= 3) return 'badge-ending-soon';
+  return 'badge-days';
+}
+
+function renderCards(offers) {
+  const grid = document.getElementById('grid');
+  if (!offers.length) {
+    grid.innerHTML = `<div class="state-box"><div class="icon">🤷</div><h2>No Deals Found</h2><p>Try a different search term — e.g. "phone", "laptop", "TV", "milk".</p></div>`;
+    return;
+  }
+  grid.innerHTML = offers.map((o, i) => `
+    <div class="card" style="animation-delay:${i * 0.04}s">
+      <img class="card-thumb" src="${o.thumb}" alt="${o.title}" loading="lazy" onerror="this.style.display='none'">
+      <div class="card-body">
+        <div class="card-store">
+          <img class="store-logo" src="${o.logo}" alt="${o.store}" onerror="this.style.display='none'">
+          <span class="store-name">${o.store}</span>
+        </div>
+        <div class="card-title">${o.title}</div>
+        <div class="card-meta">
+          ${o.days ? `<span class="badge ${getDaysBadgeClass(o.days)}">${o.days}</span>` : ''}
+          ${o.pages ? `<span class="badge badge-pages">${o.pages}</span>` : ''}
+        </div>
+        <a class="card-link" href="${o.url}" target="_blank" rel="noopener">View Offer →</a>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterOffers(query) {
+  if (!query || query.trim() === '') return ALL_OFFERS;
+  const q = query.toLowerCase().trim();
+  return ALL_OFFERS.filter(o =>
+    o.title.toLowerCase().includes(q) ||
+    o.store.toLowerCase().includes(q) ||
+    o.tags.some(t => t.includes(q))
+  );
+}
+
+async function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  currentQuery = q;
+
+  // Update chips
+  document.querySelectorAll('.chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.q === q);
+  });
+
+  const filtered = filterOffers(q);
+
+  // Show results
+  setStatus('done', `Found ${filtered.length} offer${filtered.length !== 1 ? 's' : ''}${q ? ` for "${q}"` : ''}`);
+  renderCards(filtered);
+
+  // Only call AI if there's a specific search query
+  if (q && filtered.length > 0) {
+    await getAISummary(q, filtered);
+  } else {
+    document.getElementById('aiBox').classList.remove('visible');
+  }
+}
+
+async function getAISummary(query, offers) {
+  const aiBox = document.getElementById('aiBox');
+  const aiText = document.getElementById('aiText');
+  aiBox.classList.add('visible');
+  aiText.innerHTML = '<span style="color:var(--muted)">Analyzing deals...</span>';
+  setStatus('loading', `AI is analyzing ${offers.length} offers for "${query}"...`);
+
+  const offerList = offers.slice(0, 8).map(o => `• ${o.title} at ${o.store} (${o.days})`).join('\n');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: 'You are a helpful Qatar shopping assistant. Given a list of current Doha offers, write a concise 2-3 sentence summary highlighting the best deals and key stores for the user\'s search query. Be specific and practical. No bullet points, just friendly prose.',
+        messages: [{
+          role: 'user',
+          content: `My search: "${query}"\n\nCurrent Qatar offers found:\n${offerList}\n\nGive me a brief, helpful summary of what's available and which stores look most promising.`
+        }]
+      })
+    });
+
+    const data = await res.json();
+    const text = data?.content?.[0]?.text || '';
+    aiText.innerHTML = text || 'Could not load AI summary.';
+    setStatus('done', `${offers.length} result${offers.length !== 1 ? 's' : ''} for "${query}"`);
+  } catch (e) {
+    aiBox.classList.remove('visible');
+    setStatus('done', `${offers.length} result${offers.length !== 1 ? 's' : ''} for "${query}"`);
+  }
+}
+
+// ─── Event listeners ───────────────────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+
+document.getElementById('chips').addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  document.getElementById('searchInput').value = chip.dataset.q;
+  doSearch();
+});
+
+// Init: show all
+renderCards(ALL_OFFERS);
+setStatus('done', `${ALL_OFFERS.length} active offers loaded · Search or filter above`);
+</script>
+</body>
+</html>
+
